@@ -1,0 +1,2329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tarkov Hideout Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            border: 2px solid #4a4a4a;
+        }
+
+        h1 {
+            color: #ffa726;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        button {
+            background: #4a4a4a;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            border: 2px solid #666;
+        }
+
+        button:hover {
+            background: #5a5a5a;
+            border-color: #ffa726;
+        }
+
+        button.primary {
+            background: #ffa726;
+            color: #000;
+            font-weight: bold;
+        }
+
+        button.primary:hover {
+            background: #ffb74d;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: #3a3a3a;
+            border: 2px solid #4a4a4a;
+            border-radius: 5px 5px 0 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: #ffa726;
+            color: #000;
+            border-color: #ffa726;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            background: #2a2a2a;
+            border: 2px solid #4a4a4a;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 16px;
+        }
+
+        .search-bar:focus {
+            outline: none;
+            border-color: #ffa726;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #4a4a4a;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            color: #ffa726;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .item-card {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #4a4a4a;
+            transition: all 0.3s;
+        }
+
+        .item-card:hover {
+            border-color: #ffa726;
+            transform: translateY(-2px);
+        }
+
+        .item-card.high-value {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .item-card.completed {
+            opacity: 0.6;
+        }
+
+        .item-card-top {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .item-image {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            border: 2px solid #4a4a4a;
+            padding: 5px;
+        }
+
+        .item-image-error {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: #666;
+        }
+
+        .item-image-container {
+            position: relative;
+        }
+
+        .edit-image-btn {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(255, 167, 38, 0.9);
+            color: #000;
+            border: none;
+            border-radius: 3px;
+            padding: 4px 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .item-image-container:hover .edit-image-btn {
+            opacity: 1;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+            border: 2px solid #ffa726;
+            max-width: 600px;
+            width: 90%;
+        }
+
+        .modal-content h2 {
+            color: #ffa726;
+            margin-bottom: 20px;
+        }
+
+        .modal-content label {
+            display: block;
+            margin-bottom: 8px;
+            color: #e0e0e0;
+            font-weight: bold;
+        }
+
+        .modal-content input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            background: #1a1a1a;
+            border: 2px solid #4a4a4a;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .modal-content input[type="text"]:focus {
+            outline: none;
+            border-color: #ffa726;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+        }
+
+        .image-preview {
+            margin: 15px 0;
+            padding: 15px;
+            background: #1a1a1a;
+            border: 2px solid #4a4a4a;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .image-preview img {
+            max-width: 100px;
+            max-height: 100px;
+            object-fit: contain;
+        }
+
+        .helper-text {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 15px;
+        }
+
+        .item-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .item-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .item-name {
+            font-weight: bold;
+            color: #fff;
+            font-size: 1.1em;
+        }
+
+        .high-value-badge {
+            background: #ffd700;
+            color: #000;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .fir-badge {
+            background: #4caf50;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .item-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .quantity-control {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .quantity-control label {
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        .quantity-input {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .quantity-input input {
+            width: 60px;
+            padding: 6px;
+            background: #2a2a2a;
+            border: 1px solid #4a4a4a;
+            border-radius: 4px;
+            color: #fff;
+            text-align: center;
+        }
+
+        .quantity-input button {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #2a2a2a;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+            transition: width 0.3s;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #ffa726;
+            margin: 30px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #4a4a4a;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+            font-style: italic;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-label {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #4a4a4a;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            border: 2px solid #666;
+            transition: all 0.3s;
+        }
+
+        .file-upload-label:hover {
+            background: #5a5a5a;
+            border-color: #ffa726;
+        }
+
+        .module-card {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #4a4a4a;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .module-card:hover {
+            border-color: #ffa726;
+        }
+
+        .module-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #4a4a4a;
+        }
+
+        .module-name {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #ffa726;
+        }
+
+        .module-levels {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .level-button {
+            padding: 10px;
+            background: #2a2a2a;
+            border: 2px solid #4a4a4a;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+            color: #fff;
+        }
+
+        .level-button:hover {
+            border-color: #ffa726;
+        }
+
+        .level-button.completed {
+            background: #4caf50;
+            border-color: #4caf50;
+            font-weight: bold;
+        }
+
+        .level-button.active {
+            background: #ff9800;
+            border-color: #ff9800;
+            font-weight: bold;
+        }
+
+        #hideoutModulesGrid {
+            max-width: 100%;
+        }
+
+        .usage-button {
+            background: #3a3a3a;
+            color: #ffa726;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid #4a4a4a;
+            transition: all 0.3s;
+        }
+
+        .usage-button:hover {
+            background: #4a4a4a;
+            border-color: #ffa726;
+        }
+
+        .usage-list {
+            margin-top: 10px;
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 5px;
+            border: 2px solid #4a4a4a;
+        }
+
+        .usage-item {
+            padding: 5px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .usage-item:last-child {
+            border-bottom: none;
+        }
+
+        .usage-module {
+            color: #ffa726;
+            font-weight: bold;
+        }
+
+        .usage-count {
+            color: #4caf50;
+        }
+
+        .usage-level {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .info-icon {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            line-height: 18px;
+            text-align: center;
+            background: #4a4a4a;
+            color: #ffa726;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: help;
+            margin-left: 5px;
+        }
+
+        .info-icon:hover {
+            background: #ffa726;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 Tarkov Hideout Tracker</h1>
+            <p>Track your hideout items and manage your stash efficiently</p>
+            <p id="api-indicator" style="margin-top: 10px; font-size: 0.9em; color: #4caf50;">
+                ⚡ Powered by <a href="https://tarkov.dev" target="_blank" style="color: #ffa726; text-decoration: none;">Tarkov.dev API</a>
+            </p>
+            <p id="backup-status" style="margin-top: 5px; font-size: 0.85em; color: #888;">
+                💾 Automatic backups enabled
+            </p>
+        </header>
+
+        <div class="controls">
+            <button class="primary" onclick="saveData()">💾 Save Progress</button>
+            <button class="primary" onclick="openAddItemModal()">➕ Add Item</button>
+            <button onclick="openBackupManager()" title="View and manage automatic backups" style="background: #2196f3;">💾 Manage Backups</button>
+            <button onclick="refreshAPIData()" title="Fetch latest data from Tarkov.dev API">🔄 Refresh API Data</button>
+            <button onclick="exportData()">📤 Export Data</button>
+            <label class="file-upload-label">
+                📥 Import Data
+                <input type="file" id="importFile" accept=".json" onchange="importData(event)">
+            </label>
+            <button onclick="resetData()">🗑️ Reset All</button>
+            <button onclick="loadDefaultItems()">📋 Load Default Items</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Total Items</h3>
+                <div class="value" id="totalItems">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Completed</h3>
+                <div class="value" id="completedItems">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Progress</h3>
+                <div class="value" id="progressPercent">0%</div>
+            </div>
+            <div class="stat-card">
+                <h3>High Value Items</h3>
+                <div class="value" id="highValueCount">0</div>
+                <div style="margin-top: 10px; font-size: 0.85em; color: #888;">
+                    Threshold: <a href="#" onclick="adjustHighValueThreshold(); return false;" style="color: #ffa726; text-decoration: none;">
+                        <span id="thresholdDisplay">${HIGH_VALUE_THRESHOLD.toLocaleString()}₽</span> ⚙️
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('all')">All Items</div>
+            <div class="tab" onclick="switchTab('needed')">Needed</div>
+            <div class="tab" onclick="switchTab('hideout-modules')">Hideout Modules</div>
+            <div class="tab" onclick="switchTab('safe-to-sell')">Safe to Sell</div>
+            <div class="tab" onclick="switchTab('high-value')">High Value</div>
+        </div>
+
+        <input type="text" class="search-bar" id="searchBar" placeholder="Search items..." oninput="filterItems()">
+
+        <div id="all" class="tab-content active">
+            <div class="items-grid" id="allItemsGrid"></div>
+        </div>
+
+        <div id="needed" class="tab-content">
+            <div class="items-grid" id="neededItemsGrid"></div>
+        </div>
+
+        <div id="hideout-modules" class="tab-content">
+            <div id="hideoutModulesGrid"></div>
+        </div>
+
+        <div id="safe-to-sell" class="tab-content">
+            <div class="items-grid" id="safeToSellGrid"></div>
+        </div>
+
+        <div id="high-value" class="tab-content">
+            <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid #4caf50; border-radius: 5px; padding: 15px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <span style="font-size: 1.5em;">💎</span>
+                    <strong style="color: #4caf50;">High Value Items - Based on Flea Market Prices</strong>
+                </div>
+                <p style="color: #aaa; margin: 0; font-size: 0.9em;">
+                    Items are marked as "High Value" if they sell for <strong id="highValueThresholdInfo">${HIGH_VALUE_THRESHOLD.toLocaleString()}₽</strong> or more on the flea market.
+                    Prices are updated from the API. Click the threshold in the stats above to adjust.
+                </p>
+            </div>
+            <div class="items-grid" id="highValueGrid"></div>
+        </div>
+    </div>
+
+    <!-- Image Editor Modal -->
+    <div id="imageEditorModal" class="modal" onclick="if(event.target === this) closeImageEditor();">
+        <div class="modal-content">
+            <h2>Edit Item Image</h2>
+            <div class="helper-text">
+                Find the correct item on tarkov.dev, right-click the image, and copy the image URL.
+                <br>Format: https://assets.tarkov.dev/[ITEM-ID]-icon.webp
+            </div>
+            <label>Item Name:</label>
+            <input type="text" id="editItemName" disabled>
+
+            <label>Image URL:</label>
+            <input type="text" id="editImageUrl" placeholder="https://assets.tarkov.dev/5c06779c86f77426e00dd782-icon.webp" oninput="previewImage()">
+
+            <div class="image-preview">
+                <div style="color: #888; margin-bottom: 10px;">Preview:</div>
+                <img id="imagePreview" src="" alt="Preview" style="display: none;" onerror="this.style.display='none';">
+                <div id="noPreview" style="color: #666;">Enter a valid image URL to see preview</div>
+            </div>
+
+            <div class="modal-buttons">
+                <button onclick="closeImageEditor()">Cancel</button>
+                <button class="primary" onclick="saveImageUrl()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Item Modal -->
+    <div id="addItemModal" class="modal" onclick="if(event.target === this) closeAddItemModal();">
+        <div class="modal-content">
+            <h2>Add Custom Item</h2>
+            <div class="helper-text">
+                Add a custom item to track. You can find item images on tarkov.dev.
+            </div>
+
+            <label>Item Name: <span style="color: #ff6b6b;">*</span></label>
+            <input type="text" id="addItemName" placeholder="e.g., Graphics card">
+
+            <label>Quantity Needed: <span style="color: #ff6b6b;">*</span></label>
+            <input type="number" id="addItemNeeded" placeholder="e.g., 50 (or 0 for no hideout use)" min="0" value="1">
+
+            <label>Quantity Owned:</label>
+            <input type="number" id="addItemOwned" placeholder="0" min="0" value="0">
+
+            <div class="checkbox-container" style="margin: 15px 0;">
+                <input type="checkbox" id="addItemFIR">
+                <label for="addItemFIR">Found In Raid (FIR) Required</label>
+            </div>
+
+            <div class="checkbox-container" style="margin: 15px 0;">
+                <input type="checkbox" id="addItemHighValue">
+                <label for="addItemHighValue">High Value Item</label>
+            </div>
+
+            <label>Image URL (optional):</label>
+            <input type="text" id="addItemImage" placeholder="https://assets.tarkov.dev/5c06779c86f77426e00dd782-icon.webp" oninput="previewAddItemImage()">
+
+            <div class="image-preview">
+                <div style="color: #888; margin-bottom: 10px;">Preview:</div>
+                <img id="addItemImagePreview" src="" alt="Preview" style="display: none;" onerror="this.style.display='none';">
+                <div id="addItemNoPreview" style="color: #666;">Enter an image URL to see preview</div>
+            </div>
+
+            <div class="modal-buttons">
+                <button onclick="closeAddItemModal()">Cancel</button>
+                <button class="primary" onclick="saveNewItem()">Add Item</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup Manager Modal -->
+    <div id="backupManagerModal" class="modal" onclick="if(event.target === this) closeBackupManager();">
+        <div class="modal-content" style="max-width: 700px;">
+            <h2>💾 Backup Manager</h2>
+            <p style="color: #aaa; margin-bottom: 20px;">Automatic backups are created before major operations. You can restore or delete them here.</p>
+
+            <div id="backupList" style="max-height: 400px; overflow-y: auto;">
+                <!-- Backups will be populated here -->
+            </div>
+
+            <div class="modal-buttons" style="margin-top: 20px;">
+                <button onclick="createManualBackup()">💾 Create Manual Backup</button>
+                <button onclick="downloadAllBackups()" style="background: #4caf50;">📥 Download All Backups</button>
+                <button onclick="closeBackupManager()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarkov.dev API Integration -->
+    <script src="tarkov-api.js"></script>
+
+    <script>
+        let items = [];
+        let hideoutModules = [];
+        let currentEditingItemIndex = null;
+        const STORAGE_KEY = 'tarkov_hideout_tracker';
+        const MODULES_STORAGE_KEY = 'tarkov_hideout_modules';
+        const API_CACHE_KEY = 'tarkov_api_cache';
+        const API_CACHE_TIMESTAMP_KEY = 'tarkov_api_cache_timestamp';
+        const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+        const BACKUP_KEY_PREFIX = 'tarkov_backup_';
+        const MAX_BACKUPS = 10; // Keep last 10 backups
+        const HIGH_VALUE_THRESHOLD_KEY = 'tarkov_high_value_threshold';
+        let HIGH_VALUE_THRESHOLD = parseInt(localStorage.getItem(HIGH_VALUE_THRESHOLD_KEY)) || 80000; // 80k roubles
+
+        // ====================
+        // AUTOMATIC BACKUP SYSTEM
+        // ====================
+
+        /**
+         * Create an automatic backup of current progress
+         */
+        function createAutoBackup(reason = 'auto') {
+            try {
+                const timestamp = Date.now();
+                const backup = {
+                    timestamp: timestamp,
+                    date: new Date(timestamp).toLocaleString(),
+                    reason: reason,
+                    items: items,
+                    modules: hideoutModules
+                };
+
+                const backupKey = BACKUP_KEY_PREFIX + timestamp;
+                localStorage.setItem(backupKey, JSON.stringify(backup));
+
+                // Clean up old backups (keep only MAX_BACKUPS)
+                cleanupOldBackups();
+
+                console.log(`💾 Auto-backup created: ${reason} (${backup.date})`);
+                return backupKey;
+            } catch (error) {
+                console.error('Failed to create backup:', error);
+                return null;
+            }
+        }
+
+        /**
+         * Get all available backups
+         */
+        function getAllBackups() {
+            const backups = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(BACKUP_KEY_PREFIX)) {
+                    try {
+                        const backup = JSON.parse(localStorage.getItem(key));
+                        backups.push({ key: key, ...backup });
+                    } catch (e) {
+                        console.error('Failed to parse backup:', key);
+                    }
+                }
+            }
+            // Sort by timestamp (newest first)
+            backups.sort((a, b) => b.timestamp - a.timestamp);
+            return backups;
+        }
+
+        /**
+         * Clean up old backups, keeping only MAX_BACKUPS
+         */
+        function cleanupOldBackups() {
+            const backups = getAllBackups();
+            if (backups.length > MAX_BACKUPS) {
+                const toDelete = backups.slice(MAX_BACKUPS);
+                toDelete.forEach(backup => {
+                    localStorage.removeItem(backup.key);
+                    console.log(`🗑️ Deleted old backup: ${backup.date}`);
+                });
+            }
+        }
+
+        /**
+         * Restore from a backup
+         */
+        function restoreFromBackup(backupKey) {
+            try {
+                const backup = JSON.parse(localStorage.getItem(backupKey));
+                if (!backup) {
+                    throw new Error('Backup not found');
+                }
+
+                // Create a backup before restoring (in case they want to undo)
+                createAutoBackup('before_restore');
+
+                // Restore data
+                items = backup.items;
+                hideoutModules = backup.modules;
+
+                // Save to main storage
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+                localStorage.setItem(MODULES_STORAGE_KEY, JSON.stringify(hideoutModules));
+
+                renderAll();
+                updateBackupStatus();
+
+                console.log(`✅ Restored from backup: ${backup.date}`);
+                return true;
+            } catch (error) {
+                console.error('Failed to restore backup:', error);
+                return false;
+            }
+        }
+
+        /**
+         * Delete a specific backup
+         */
+        function deleteBackup(backupKey) {
+            localStorage.removeItem(backupKey);
+            console.log('🗑️ Backup deleted:', backupKey);
+        }
+
+        /**
+         * Update backup status indicator
+         */
+        function updateBackupStatus() {
+            const backups = getAllBackups();
+            const statusEl = document.getElementById('backup-status');
+            if (statusEl && backups.length > 0) {
+                const latest = backups[0];
+                const age = Date.now() - latest.timestamp;
+                const minutes = Math.floor(age / 1000 / 60);
+                const hours = Math.floor(minutes / 60);
+
+                let ageText = minutes < 60 ? `${minutes}m ago` : `${hours}h ago`;
+                statusEl.innerHTML = `💾 Last backup: ${ageText} <a href="#" onclick="openBackupManager(); return false;" style="color: #ffa726;">(Manage)</a>`;
+            }
+        }
+
+        // ====================
+        // API INTEGRATION CODE
+        // ====================
+
+        /**
+         * Fetch hideout data from Tarkov.dev API or use cached data
+         */
+        async function fetchHideoutDataWithCache() {
+            try {
+                // Check if we have cached data
+                const cachedData = localStorage.getItem(API_CACHE_KEY);
+                const cacheTimestamp = localStorage.getItem(API_CACHE_TIMESTAMP_KEY);
+                const now = Date.now();
+
+                if (cachedData && cacheTimestamp) {
+                    const age = now - parseInt(cacheTimestamp);
+                    if (age < CACHE_DURATION) {
+                        console.log('✅ Using cached API data (age: ' + Math.round(age / 1000 / 60) + ' minutes)');
+                        return JSON.parse(cachedData);
+                    }
+                }
+
+                // Fetch fresh data
+                console.log('🔄 Fetching fresh data from Tarkov.dev API...');
+                const data = await fetchHideoutData();
+
+                // Cache the fresh data
+                localStorage.setItem(API_CACHE_KEY, JSON.stringify(data));
+                localStorage.setItem(API_CACHE_TIMESTAMP_KEY, now.toString());
+
+                console.log('✅ Fresh API data cached');
+                return data;
+            } catch (error) {
+                console.error('❌ API fetch failed:', error);
+                // Try to use stale cache if available
+                const cachedData = localStorage.getItem(API_CACHE_KEY);
+                if (cachedData) {
+                    console.log('⚠️ Using stale cached data as fallback');
+                    return JSON.parse(cachedData);
+                }
+                throw error;
+            }
+        }
+
+        /**
+         * Transform API data into our app's format
+         */
+        function transformAPIData(apiData) {
+            const itemTotals = calculateTotalItems(apiData);
+
+            // Transform items
+            const transformedItems = Object.entries(itemTotals).map(([itemName, data]) => {
+                const item = data.item;
+                const iconUrl = item.iconLink || 'https://via.placeholder.com/64';
+
+                // Determine if item is Find In Raid (FIR)
+                // Check if item name contains "FIR" or if it's in certain categories
+                const isFIR = itemName.includes('(FIR)') || itemName.includes('found in raid');
+
+                // Get flea market price
+                const fleaPrice = item.avg24hPrice || item.lastLowPrice || 0;
+                const isHighValue = fleaPrice >= HIGH_VALUE_THRESHOLD;
+
+                return {
+                    name: itemName,
+                    needed: data.total,
+                    owned: 0,
+                    findInRaid: isFIR,
+                    highValue: isHighValue,
+                    fleaPrice: fleaPrice, // Store price for display
+                    image: iconUrl
+                };
+            });
+
+            // Sort items by needed quantity (descending)
+            transformedItems.sort((a, b) => b.needed - a.needed);
+
+            // Log sample images for debugging
+            console.log('📸 Sample API image URLs (first 5 items):');
+            transformedItems.slice(0, 5).forEach(item => {
+                console.log(`  ${item.name}: ${item.image}`);
+            });
+
+            // Log high value items
+            const highValueItems = transformedItems.filter(item => item.highValue);
+            console.log(`\n💎 High Value Items (${highValueItems.length} items over ${HIGH_VALUE_THRESHOLD.toLocaleString()}₽):`);
+            highValueItems.slice(0, 10).forEach(item => {
+                console.log(`  ${item.name}: ${item.fleaPrice.toLocaleString()}₽`);
+            });
+
+            // Transform hideout modules
+            const transformedModules = apiData.hideoutStations.map(station => {
+                const maxLevel = station.levels.length;
+
+                // Build requirements for each level
+                const requirements = station.levels.map(level => {
+                    const items = level.itemRequirements.map(req => ({
+                        name: req.item.name,
+                        count: req.quantity
+                    }));
+
+                    return {
+                        level: level.level,
+                        items: items
+                    };
+                });
+
+                return {
+                    name: station.name,
+                    currentLevel: 0,
+                    maxLevel: maxLevel,
+                    requirements: requirements
+                };
+            });
+
+            return {
+                items: transformedItems,
+                modules: transformedModules
+            };
+        }
+
+        /**
+         * Initialize app with API data
+         */
+        async function initializeWithAPI() {
+            try {
+                const apiData = await fetchHideoutDataWithCache();
+                const transformed = transformAPIData(apiData);
+
+                console.log('📊 API Data loaded:');
+                console.log('  - Items:', transformed.items.length);
+                console.log('  - Modules:', transformed.modules.length);
+
+                return transformed;
+            } catch (error) {
+                console.error('⚠️ Failed to load from API, using hardcoded data:', error);
+                return null;
+            }
+        }
+
+        // Default items from the spreadsheet - Complete list with all hideout requirements
+        const defaultItems = [
+            // NON-FIR ITEMS (sorted by needed quantity, descending)
+            { name: 'Bundle of wires', needed: 102, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5c06779c86f77426e00dd782-icon.webp' },
+            { name: 'Energy-saving lamp', needed: 102, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/57347c5b245977448d35f6e1-icon.webp' },
+            { name: 'Metal spare parts', needed: 55, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d1b2fa286f77425227d1674-icon.webp' },
+            { name: 'Graphics card', needed: 50, owned: 0, findInRaid: false, highValue: true, image: 'https://assets.tarkov.dev/57347ca924597744596b4e71-icon.webp' },
+            { name: 'Phase control relay', needed: 37, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d1b313086f77425227d1678-icon.webp' },
+            { name: 'Corrugated hose', needed: 37, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d1b2ffd86f77425243e98ff-icon.webp' },
+            { name: 'Bolts', needed: 43, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/57347c93245977448d35f6e3-icon.webp' },
+            { name: 'Power cord', needed: 32, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5bc9bdb8d4351e003562b8a1-icon.webp' },
+            { name: 'Pack of screws', needed: 50, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/590c2e1186f77425357b6124-icon.webp' },
+            { name: 'Pack of nails', needed: 33, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/590c2d8786f774245b1f03f3-icon.webp' },
+            { name: 'Duct tape', needed: 19, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/590c311186f77424d1667482-icon.webp' },
+            { name: 'Military cable', needed: 18, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d1b376e86f774252519444e-icon.webp' },
+            { name: 'Xenomorph sealing foam', needed: 17, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5c0e541586f7747fa54205c9-icon.webp' },
+            { name: 'Spark plug', needed: 17, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/590a3d9c86f774385926e510-icon.webp' },
+            { name: 'Bottle of saline solution', needed: 16, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5c0e530286f7747fa1419862-icon.webp' },
+            { name: 'T-Shaped plug', needed: 16, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/590a373286f774287226394c-icon.webp' },
+            { name: 'Shustrilo sealing foam', needed: 24, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5c0e530286f7747fa1419862-icon.webp' },
+            { name: 'Military power filter', needed: 15, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d1b36a186f7742523398433-icon.webp' },
+            { name: 'Radiator helix', needed: 15, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d1b33a686f7742523398398-icon.webp' },
+            { name: 'Screw nuts', needed: 22, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/590c31c586f774245e3141b2-icon.webp' },
+            { name: 'Military corrugated tube', needed: 12, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5c0e53c886f7747fa54205c7-icon.webp' },
+            { name: 'Fleece fabric', needed: 11, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5c093db286f7740a1b2617e3-icon.webp' },
+            { name: 'Esmarch tourniquet', needed: 10, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/544fb3f34bdc2d03748b456a-icon.webp' },
+            { name: 'Cordura polyamide fabric', needed: 10, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5c093ca986f7740a1867ab12-icon.webp' },
+            { name: 'Aramid fiber fabric', needed: 10, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d1b5e94d7ad1a2b865a96b0-icon.webp' },
+            { name: 'Damaged hard drive', needed: 8, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/590a386e86f77429692b27ab-icon.webp' },
+            { name: 'NIXXOR lens', needed: 8, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d1b371186f774253763a656-icon.webp' },
+            { name: 'Weapon parts', needed: 8, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/590c2d4d86f77425357b6123-icon.webp' },
+            { name: 'Military flash drive', needed: 8, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/590c621186f774138d11ea29-icon.webp' },
+            { name: 'Insulating tape', needed: 6, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/590c2e1186f77425357b6124-icon.webp' },
+            { name: 'Phased array element', needed: 6, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d1b371186f774253763a656-icon.webp' },
+            { name: 'Slim diary', needed: 5, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d1b2ffd86f77425243e8d17-icon.webp' },
+            { name: 'Dry fuel', needed: 5, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d1b3f2d86f774252339976f-icon.webp' },
+            { name: 'Can of Majaica coffee beans', needed: 5, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5bc9b720d4351e450201234b-icon.webp' },
+            { name: 'Can of thermite', needed: 5, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5bc9b720d4351e450201234b-icon.webp' },
+            { name: 'Pack of sodium bicarbonate', needed: 5, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5bc9b156d4351e00367fbce9-icon.webp' },
+            { name: 'Wrench', needed: 5, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/590c2c9f86f774245b1f03f2-icon.webp' },
+            { name: 'Can of white salt', needed: 4, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5bc9b720d4351e450201234b-icon.webp' },
+            { name: 'WI-FI Camera', needed: 4, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d1b371186f774253763a656-icon.webp' },
+            { name: 'Intelligence folder', needed: 4, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d1b376e86f774252519444e-icon.webp' },
+            { name: 'VPX Flash Storage Module', needed: 4, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5c05300686f7746dce784e5d-icon.webp' },
+            { name: 'Classic matches', needed: 3, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/57347b8b24597737dd42e192-icon.webp' },
+            { name: 'WD-40 (100ml)', needed: 6, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/590c311186f77424d1667482-icon.webp' },
+            { name: 'Secure Flash drive', needed: 3, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/590c621186f774138d11ea29-icon.webp' },
+            { name: 'Leatherman Multitool', needed: 3, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/590c2d4d86f77425357b6123-icon.webp' },
+            { name: 'Diary', needed: 5, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d1b2ffd86f77425243e8d17-icon.webp' },
+            { name: 'Awl', needed: 2, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/590c2c9f86f774245b1f03f2-icon.webp' },
+            { name: 'Aseptic bandage', needed: 2, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/544fb3f34bdc2d03748b456a-icon.webp' },
+            { name: 'TP-200 TNT brick', needed: 2, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/590c621186f774138d11ea29-icon.webp' },
+            { name: 'Secure magnetic tape cassette', needed: 2, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/590c621186f774138d11ea29-icon.webp' },
+            { name: '6-STEN-140-M military battery', needed: 2, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d1b371186f774253763a656-icon.webp' },
+            { name: 'Topographic survey maps', needed: 1, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d1b376e86f774252519444e-icon.webp' },
+            { name: 'Factory plan map', needed: 1, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d1b376e86f774252519444e-icon.webp' },
+            { name: 'Far-forward GPS Signal Amplifier Unit', needed: 1, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d1b371186f774253763a656-icon.webp' },
+            { name: 'Toilet paper', needed: 1, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d403f9186f7743cac3f229b-icon.webp' },
+            { name: 'Toothpaste', needed: 1, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5c1d0dc586f7744baf2e7b79-icon.webp' },
+            { name: 'Soap', needed: 1, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5c1d0dc586f7744baf2e7b79-icon.webp' },
+            { name: 'Disposable syringe', needed: 1, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/544fb3f34bdc2d03748b456a-icon.webp' },
+            { name: 'Pile of meds', needed: 1, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/590c661e86f7741e566b646a-icon.webp' },
+            { name: 'Bottle of OLOLO Multivitamins', needed: 1, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5c1d0dc586f7744baf2e7b79-icon.webp' },
+            { name: 'LEDX Skin Transilluminator', needed: 1, owned: 0, findInRaid: false, highValue: true, image: 'https://assets.tarkov.dev/5d1b371186f774253763a656-icon.webp' },
+            { name: 'Lucky Scav Junk box', needed: 1, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d1b371186f774253763a656-icon.webp' },
+            { name: 'Advanced current converter', needed: 1, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d1b371186f774253763a656-icon.webp' },
+            { name: 'Flat screwdriver', needed: 0, owned: 0, findInRaid: false, highValue: false, image: 'https://assets.tarkov.dev/5d63d33b86f7746ea9275524-icon.webp' },
+
+            // FIR ITEMS (sorted by needed quantity, descending)
+            { name: 'CPU fan', needed: 50, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5d03794386f77420415576f5-icon.webp' },
+            { name: 'Power supply unit', needed: 30, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/59e36c6f86f774176c10a2a7-icon.webp' },
+            { name: 'Light bulb', needed: 29, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5d1b309586f77425227d1676-icon.webp' },
+            { name: 'KEKTAPE duct tape', needed: 26, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/590c311186f77424d1667482-icon.webp' },
+            { name: 'Silicone tube', needed: 25, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5c12620d86f7743f8b198b72-icon.webp' },
+            { name: 'Electric motor', needed: 24, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5d1b2fa286f77425227d1674-icon.webp' },
+            { name: 'Printed circuit board', needed: 20, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5d1b371186f774253763a656-icon.webp' },
+            { name: 'Pressure gauge', needed: 13, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5d1b371186f774253763a656-icon.webp' },
+            { name: 'Toolset', needed: 12, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/590c2d4d86f77425357b6123-icon.webp' },
+            { name: 'Capacitors', needed: 12, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5c06782b86f77426df5407d2-icon.webp' },
+            { name: 'Tube of Poxeram cold welding', needed: 11, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/590a3b0486f7743954552bdb-icon.webp' },
+            { name: 'Electric drill', needed: 12, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/590c2d4d86f77425357b6123-icon.webp' },
+            { name: 'Golden neck chain', needed: 8, owned: 0, findInRaid: true, highValue: true, image: 'https://assets.tarkov.dev/59faf7ca86f7740dbe19f6c2-icon.webp' },
+            { name: 'Pliers Elite', needed: 6, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/590c2c9f86f774245b1f03f2-icon.webp' },
+            { name: 'Working LCD', needed: 6, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5c0a794586f77461713e0b3c-icon.webp' },
+            { name: 'Gold skull ring', needed: 6, owned: 0, findInRaid: true, highValue: true, image: 'https://assets.tarkov.dev/59faf7ca86f7740dbe19f6c2-icon.webp' },
+            { name: 'Crickent lighter', needed: 6, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5d40407c86f774318526545a-icon.webp' },
+            { name: 'Gas mask air filter', needed: 5, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5c0696830db834001d23f5da-icon.webp' },
+            { name: 'Set of files "Master"', needed: 5, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/590c2d4d86f77425357b6123-icon.webp' },
+            { name: 'Car battery', needed: 5, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5d1b371186f774253763a656-icon.webp' },
+            { name: 'Bronze lion figurine', needed: 4, owned: 0, findInRaid: true, highValue: true, image: 'https://assets.tarkov.dev/59faf7ca86f7740dbe19f6c2-icon.webp' },
+            { name: 'Roler Submariner gold wrist watch', needed: 4, owned: 0, findInRaid: true, highValue: true, image: 'https://assets.tarkov.dev/59faf7ca86f7740dbe19f6c2-icon.webp' },
+            { name: 'GreenBat lithium battery', needed: 4, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5d1b371186f774253763a656-icon.webp' },
+            { name: 'Intelligence folder (FIR)', needed: 4, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5d1b376e86f774252519444e-icon.webp' },
+            { name: 'Construction measuring tape', needed: 3, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/57347c1124597737fb1379e3-icon.webp' },
+            { name: 'Sewing kit', needed: 3, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/590c2d4d86f77425357b6123-icon.webp' },
+            { name: 'Medical tools', needed: 3, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/544fb3f34bdc2d03748b456a-icon.webp' },
+            { name: 'Tech manual', needed: 3, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5d1b376e86f774252519444e-icon.webp' },
+            { name: 'Bottle of Fierce Hatchling moonshine', needed: 3, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5d1b371186f774253763a656-icon.webp' },
+            { name: 'Golden rooster figurine', needed: 3, owned: 0, findInRaid: true, highValue: true, image: 'https://assets.tarkov.dev/59faf7ca86f7740dbe19f6c2-icon.webp' },
+            { name: 'Military COFDM Wireless Signal Transmitter', needed: 2, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5d1b371186f774253763a656-icon.webp' },
+            { name: 'Medical bloodset', needed: 2, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5755383e24597772cb798966-icon.webp' },
+            { name: 'Alkaline cleaner for heat exchangers', needed: 2, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5c0e530286f7747fa1419862-icon.webp' },
+            { name: 'Smoked Chimney drain cleaner', needed: 2, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5c0e530286f7747fa1419862-icon.webp' },
+            { name: 'Hunting matches', needed: 2, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/57347b8b24597737dd42e192-icon.webp' },
+            { name: 'Ratchet wrench', needed: 4, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/590c2c9f86f774245b1f03f2-icon.webp' },
+            { name: 'Metal cutting scissors', needed: 2, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/590c2b4386f77425357b6123-icon.webp' },
+            { name: 'Chainlet', needed: 2, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/59faf7ca86f7740dbe19f6c2-icon.webp' },
+            { name: '#FireKlean gun lube', needed: 2, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/590c311186f77424d1667482-icon.webp' },
+            { name: 'Analog thermometer', needed: 2, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5d1b371186f774253763a656-icon.webp' },
+            { name: 'Military corrugated tube (FIR)', needed: 2, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5c0e53c886f7747fa54205c7-icon.webp' },
+            { name: 'PAID AntiRoach spray', needed: 1, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5c0e530286f7747fa1419862-icon.webp' },
+            { name: 'SurvL Survivor Lighter', needed: 1, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5d40407c86f774318526545a-icon.webp' },
+            { name: 'Fierce Blow sledgehammer', needed: 1, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/590c2d4d86f77425357b6123-icon.webp' },
+            { name: 'Wrench (FIR)', needed: 1, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/590c2c9f86f774245b1f03f2-icon.webp' },
+            { name: 'Body armor repair kit', needed: 1, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/590c311186f77424d1667482-icon.webp' },
+            { name: 'Bulbex cable cutter', needed: 1, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/590c2d4d86f77425357b6123-icon.webp' },
+            { name: 'Cat figurine', needed: 1, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/59faf7ca86f7740dbe19f6c2-icon.webp' },
+            { name: 'Round pliers', needed: 1, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/590c2c9f86f774245b1f03f2-icon.webp' },
+            { name: 'BakeEzy cook book', needed: 1, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5d1b376e86f774252519444e-icon.webp' },
+            { name: 'Horse figurine', needed: 1, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/59faf7ca86f7740dbe19f6c2-icon.webp' },
+            { name: 'Ophthalmoscope', needed: 1, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5d1b371186f774253763a656-icon.webp' },
+            { name: 'Magnet', needed: 1, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5d1b371186f774253763a656-icon.webp' },
+            { name: 'DVD drive', needed: 1, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5d1b371186f774253763a656-icon.webp' },
+            { name: 'SSD drive', needed: 1, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/5d1b371186f774253763a656-icon.webp' },
+            { name: 'Hand drill', needed: 2, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/590c2d4d86f77425357b6123-icon.webp' },
+            { name: 'Pipe grip wrench', needed: 1, owned: 0, findInRaid: true, highValue: false, image: 'https://assets.tarkov.dev/590c2c9f86f774245b1f03f2-icon.webp' }
+        ];
+
+        // Hideout modules with item requirements per level
+        // Updated with COMPLETE requirements from user data (January 2026)
+        // Items marked with * in source are FIR (Found In Raid)
+        const defaultHideoutModules = [
+            {
+                name: 'Generator',
+                currentLevel: 0,
+                maxLevel: 3,
+                requirements: [
+                    { level: 1, items: [{ name: 'Spark plug', count: 1 }] },
+                    { level: 2, items: [{ name: 'Bulbex cable cutter', count: 1 }, { name: 'Phase control relay', count: 10 }, { name: 'Electric motor', count: 1 }, { name: 'Bundle of wires', count: 15 }] },
+                    { level: 3, items: [{ name: 'Power supply unit', count: 5 }, { name: 'Phase control relay', count: 12 }, { name: 'Electric motor', count: 3 }, { name: 'Spark plug', count: 16 }, { name: 'Metal spare parts', count: 10 }] }
+                ]
+            },
+            {
+                name: 'Vents',
+                currentLevel: 0,
+                maxLevel: 3,
+                requirements: [
+                    { level: 1, items: [] },
+                    { level: 2, items: [{ name: 'Metal spare parts', count: 5 }, { name: 'CPU fan', count: 5 }, { name: 'Car battery', count: 1 }, { name: 'Electric motor', count: 1 }] },
+                    { level: 3, items: [{ name: 'Printed circuit board', count: 5 }, { name: 'Electric motor', count: 4 }, { name: 'Metal spare parts', count: 10 }, { name: 'Bundle of wires', count: 14 }, { name: 'Car battery', count: 4 }] }
+                ]
+            },
+            {
+                name: 'Workbench',
+                currentLevel: 0,
+                maxLevel: 3,
+                requirements: [
+                    { level: 1, items: [{ name: 'Screw nuts', count: 2 }, { name: 'Bolts', count: 2 }, { name: 'Leatherman Multitool', count: 1 }] },
+                    { level: 2, items: [{ name: 'Bolts', count: 10 }, { name: 'Toolset', count: 3 }, { name: 'Set of files "Master"', count: 1 }, { name: 'Electric drill', count: 2 }, { name: 'Weapon parts', count: 3 }] },
+                    { level: 3, items: [{ name: 'Can of thermite', count: 5 }, { name: 'Pliers Elite', count: 2 }, { name: '#FireKlean gun lube', count: 1 }] }
+                ]
+            },
+            {
+                name: 'Medstation',
+                currentLevel: 0,
+                maxLevel: 3,
+                requirements: [
+                    { level: 1, items: [{ name: 'Disposable syringe', count: 1 }, { name: 'Pile of meds', count: 1 }, { name: 'Aseptic bandage', count: 2 }, { name: 'Bottle of OLOLO Multivitamins', count: 1 }] },
+                    { level: 2, items: [{ name: 'Bottle of saline solution', count: 6 }, { name: 'Medical tools', count: 3 }, { name: 'Medical bloodset', count: 2 }, { name: 'Esmarch tourniquet', count: 10 }] },
+                    { level: 3, items: [{ name: 'Ophthalmoscope', count: 1 }, { name: 'Bottle of saline solution', count: 10 }, { name: 'LEDX Skin Transilluminator', count: 1 }] }
+                ]
+            },
+            {
+                name: 'Lavatory',
+                currentLevel: 0,
+                maxLevel: 3,
+                requirements: [
+                    { level: 1, items: [{ name: 'Toilet paper', count: 1 }, { name: 'Toothpaste', count: 1 }, { name: 'Soap', count: 1 }, { name: 'Awl', count: 1 }] },
+                    { level: 2, items: [{ name: 'KEKTAPE duct tape', count: 3 }, { name: 'Corrugated hose', count: 6 }, { name: 'Pack of screws', count: 6 }, { name: 'Electric drill', count: 1 }, { name: 'Sewing kit', count: 2 }] },
+                    { level: 3, items: [{ name: 'Xenomorph sealing foam', count: 6 }, { name: 'Corrugated hose', count: 10 }, { name: 'Pressure gauge', count: 2 }, { name: 'Toolset', count: 1 }] }
+                ]
+            },
+            {
+                name: 'Intelligence Center',
+                currentLevel: 0,
+                maxLevel: 3,
+                requirements: [
+                    { level: 1, items: [{ name: 'Power cord', count: 1 }, { name: 'Intelligence folder', count: 1 }, { name: 'Topographic survey maps', count: 1 }, { name: 'Factory plan map', count: 1 }, { name: 'Working LCD', count: 1 }] },
+                    { level: 2, items: [{ name: 'Intelligence folder (FIR)', count: 3 }, { name: 'Secure Flash drive', count: 3 }, { name: 'Power cord', count: 7 }, { name: 'Damaged hard drive', count: 8 }] },
+                    { level: 3, items: [{ name: 'Military cable', count: 8 }, { name: 'Military COFDM Wireless Signal Transmitter', count: 2 }, { name: 'Far-forward GPS Signal Amplifier Unit', count: 1 }, { name: 'VPX Flash Storage Module', count: 2 }, { name: 'Military flash drive', count: 8 }, { name: 'Secure magnetic tape cassette', count: 2 }] }
+                ]
+            },
+            {
+                name: 'Water Collector',
+                currentLevel: 0,
+                maxLevel: 3,
+                requirements: [
+                    { level: 1, items: [{ name: 'Duct tape', count: 3 }, { name: 'Screw nuts', count: 5 }, { name: 'Bolts', count: 5 }, { name: 'Corrugated hose', count: 4 }] },
+                    { level: 2, items: [{ name: 'Toolset', count: 2 }, { name: 'Corrugated hose', count: 6 }, { name: 'Electric motor', count: 2 }, { name: 'KEKTAPE duct tape', count: 5 }] },
+                    { level: 3, items: [{ name: 'Ratchet wrench', count: 1 }, { name: 'Pliers Elite', count: 2 }, { name: 'Shustrilo sealing foam', count: 10 }] }
+                ]
+            },
+            {
+                name: 'Stash',
+                currentLevel: 0,
+                maxLevel: 4,
+                requirements: [
+                    { level: 1, items: [] },
+                    { level: 2, items: [{ name: 'Hand drill', count: 1 }, { name: 'Pack of screws', count: 10 }, { name: 'WD-40 (100ml)', count: 3 }, { name: 'Pack of nails', count: 5 }] },
+                    { level: 3, items: [{ name: 'Electric drill', count: 2 }, { name: 'Pack of screws', count: 15 }, { name: 'Pack of nails', count: 7 }] },
+                    { level: 4, items: [{ name: 'Bolts', count: 10 }, { name: 'Screw nuts', count: 10 }, { name: 'Shustrilo sealing foam', count: 8 }, { name: 'Ratchet wrench', count: 2 }] }
+                ]
+            },
+            {
+                name: 'Nutrition Unit',
+                currentLevel: 0,
+                maxLevel: 3,
+                requirements: [
+                    { level: 1, items: [{ name: 'Can of white salt', count: 1 }, { name: 'Power cord', count: 1 }, { name: 'Phase control relay', count: 2 }] },
+                    { level: 2, items: [{ name: 'Alkaline cleaner for heat exchangers', count: 2 }, { name: 'Wrench', count: 4 }, { name: 'Corrugated hose', count: 4 }, { name: 'Phase control relay', count: 3 }] },
+                    { level: 3, items: [{ name: 'Can of Majaica coffee beans', count: 5 }, { name: 'Pack of sodium bicarbonate', count: 5 }, { name: 'Smoked Chimney drain cleaner', count: 2 }] }
+                ]
+            },
+            {
+                name: 'Rest Space',
+                currentLevel: 0,
+                maxLevel: 3,
+                requirements: [
+                    { level: 1, items: [{ name: 'Classic matches', count: 1 }, { name: 'Duct tape', count: 1 }] },
+                    { level: 2, items: [{ name: 'Magnet', count: 1 }, { name: 'DVD drive', count: 1 }, { name: 'Energy-saving lamp', count: 5 }] },
+                    { level: 3, items: [{ name: 'GreenBat lithium battery', count: 4 }, { name: 'Bundle of wires', count: 10 }, { name: 'Capacitors', count: 5 }, { name: 'Power cord', count: 5 }] }
+                ]
+            },
+            {
+                name: 'Heating',
+                currentLevel: 0,
+                maxLevel: 3,
+                requirements: [
+                    { level: 1, items: [{ name: 'Classic matches', count: 2 }] },
+                    { level: 2, items: [{ name: 'Dry fuel', count: 5 }, { name: 'Hunting matches', count: 2 }, { name: 'Crickent lighter', count: 5 }] },
+                    { level: 3, items: [{ name: 'Military corrugated tube (FIR)', count: 2 }, { name: 'Radiator helix', count: 10 }, { name: 'Bundle of wires', count: 10 }, { name: 'Phase control relay', count: 4 }] }
+                ]
+            },
+            {
+                name: 'Illumination',
+                currentLevel: 0,
+                maxLevel: 3,
+                requirements: [
+                    { level: 1, items: [{ name: 'Crickent lighter', count: 1 }] },
+                    { level: 2, items: [{ name: 'Light bulb', count: 14 }, { name: 'Bundle of wires', count: 10 }] },
+                    { level: 3, items: [{ name: 'Energy-saving lamp', count: 12 }, { name: 'Capacitors', count: 7 }, { name: 'Bundle of wires', count: 12 }] }
+                ]
+            },
+            {
+                name: 'Shooting Range',
+                currentLevel: 0,
+                maxLevel: 3,
+                requirements: [
+                    { level: 1, items: [{ name: 'Metal spare parts', count: 1 }, { name: 'Bolts', count: 1 }, { name: 'Screw nuts', count: 1 }] },
+                    { level: 2, items: [{ name: 'Electric motor', count: 3 }, { name: 'Construction measuring tape', count: 1 }, { name: 'Tube of Poxeram cold welding', count: 3 }, { name: 'Toolset', count: 1 }, { name: 'Pack of screws', count: 3 }, { name: 'Electric drill', count: 1 }, { name: 'Metal spare parts', count: 8 }, { name: 'WI-FI Camera', count: 3 }, { name: 'Bundle of wires', count: 6 }, { name: 'Energy-saving lamp', count: 6 }] },
+                    { level: 3, items: [{ name: 'Set of files "Master"', count: 1 }, { name: 'Printed circuit board', count: 5 }, { name: 'Bundle of wires', count: 10 }, { name: 'Metal spare parts', count: 5 }, { name: 'Capacitors', count: 5 }, { name: 'Phase control relay', count: 5 }, { name: 'Power cord', count: 5 }, { name: 'Leatherman Multitool', count: 1 }, { name: 'Tech manual', count: 1 }] }
+                ]
+            },
+            {
+                name: 'Weapon Rack',
+                currentLevel: 0,
+                maxLevel: 3,
+                requirements: [
+                    { level: 1, items: [{ name: 'Pack of nails', count: 5 }, { name: 'Energy-saving lamp', count: 5 }, { name: 'Insulating tape', count: 5 }, { name: 'Hand drill', count: 1 }, { name: 'Bolts', count: 15 }, { name: 'Metal cutting scissors', count: 1 }, { name: 'Xenomorph sealing foam', count: 5 }] },
+                    { level: 2, items: [{ name: 'Metal spare parts', count: 10 }, { name: 'Pack of screws', count: 10 }, { name: 'Electric drill', count: 1 }, { name: 'Bundle of wires', count: 10 }, { name: 'Set of files "Master"', count: 1 }, { name: 'Tube of Poxeram cold welding', count: 3 }, { name: 'Energy-saving lamp', count: 10 }, { name: 'Duct tape', count: 10 }, { name: 'Weapon parts', count: 5 }] },
+                    { level: 3, items: [{ name: 'Electric drill', count: 1 }, { name: 'Energy-saving lamp', count: 15 }, { name: 'Metal spare parts', count: 10 }, { name: 'KEKTAPE duct tape', count: 5 }, { name: 'Bundle of wires', count: 15 }, { name: 'Shustrilo sealing foam', count: 5 }, { name: 'Tech manual', count: 1 }, { name: '#FireKlean gun lube', count: 1 }] }
+                ]
+            },
+            {
+                name: 'Gear Rack',
+                currentLevel: 0,
+                maxLevel: 3,
+                requirements: [
+                    { level: 1, items: [{ name: 'Electric drill', count: 1 }, { name: 'Sewing kit', count: 1 }, { name: 'Awl', count: 1 }, { name: 'Leatherman Multitool', count: 1 }, { name: 'Bolts', count: 15 }, { name: 'Fleece fabric', count: 10 }, { name: 'Energy-saving lamp', count: 8 }] },
+                    { level: 2, items: [{ name: 'Electric drill', count: 1 }, { name: 'Duct tape', count: 5 }, { name: 'Shustrilo sealing foam', count: 5 }, { name: 'Pack of nails', count: 8 }, { name: 'Energy-saving lamp', count: 12 }, { name: 'Aramid fiber fabric', count: 10 }, { name: 'Wrench (FIR)', count: 1 }] },
+                    { level: 3, items: [{ name: 'Body armor repair kit', count: 1 }, { name: 'Cordura polyamide fabric', count: 10 }, { name: 'Metal spare parts', count: 15 }, { name: 'KEKTAPE duct tape', count: 10 }, { name: 'Energy-saving lamp', count: 15 }, { name: 'Set of files "Master"', count: 1 }, { name: 'Ratchet wrench', count: 1 }] }
+                ]
+            },
+            {
+                name: 'Bitcoin Farm',
+                currentLevel: 0,
+                maxLevel: 3,
+                requirements: [
+                    { level: 1, items: [{ name: 'T-Shaped plug', count: 10 }, { name: 'VPX Flash Storage Module', count: 2 }, { name: 'Power cord', count: 15 }, { name: 'Power supply unit', count: 10 }, { name: 'CPU fan', count: 15 }] },
+                    { level: 2, items: [{ name: 'CPU fan', count: 15 }, { name: 'Power supply unit', count: 10 }, { name: 'Printed circuit board', count: 15 }, { name: 'Phase control relay', count: 10 }, { name: 'Military power filter', count: 5 }] },
+                    { level: 3, items: [{ name: 'CPU fan', count: 25 }, { name: 'Silicone tube', count: 15 }, { name: 'Electric motor', count: 10 }, { name: 'Pressure gauge', count: 10 }, { name: '6-STEN-140-M military battery', count: 2 }] }
+                ]
+            },
+            {
+                name: 'Scav Case',
+                currentLevel: 0,
+                maxLevel: 1,
+                requirements: [
+                    { level: 1, items: [{ name: 'Golden rooster figurine', count: 1 }, { name: 'Lucky Scav Junk box', count: 1 }, { name: 'Bottle of Fierce Hatchling moonshine', count: 3 }, { name: 'Roler Submariner gold wrist watch', count: 4 }, { name: 'Golden neck chain', count: 8 }, { name: 'Gold skull ring', count: 6 }, { name: 'Bronze lion figurine', count: 3 }] }
+                ]
+            },
+            {
+                name: 'Library',
+                currentLevel: 0,
+                maxLevel: 1,
+                requirements: [
+                    { level: 1, items: [{ name: 'BakeEzy cook book', count: 1 }, { name: 'Slim diary', count: 5 }, { name: 'Diary', count: 5 }, { name: 'Tech manual', count: 8 }, { name: 'Chainlet', count: 2 }, { name: 'Horse figurine', count: 1 }] }
+                ]
+            },
+            {
+                name: 'Solar Power',
+                currentLevel: 0,
+                maxLevel: 1,
+                requirements: [
+                    { level: 1, items: [{ name: 'Phased array element', count: 6 }, { name: 'Advanced current converter', count: 1 }, { name: 'Working LCD', count: 3 }, { name: 'Military cable', count: 10 }, { name: 'Military power filter', count: 10 }] }
+                ]
+            },
+            {
+                name: 'Air Filtering Unit',
+                currentLevel: 0,
+                maxLevel: 1,
+                requirements: [
+                    { level: 1, items: [{ name: 'Gas mask air filter', count: 5 }, { name: 'Military power filter', count: 5 }, { name: 'Military corrugated tube', count: 10 }] }
+                ]
+            },
+            {
+                name: 'Booze Generator',
+                currentLevel: 0,
+                maxLevel: 1,
+                requirements: [
+                    { level: 1, items: [{ name: 'Metal spare parts', count: 5 }, { name: 'Pressure gauge', count: 2 }, { name: 'Radiator helix', count: 5 }, { name: 'Silicone tube', count: 10 }, { name: 'Pipe grip wrench', count: 1 }, { name: 'Analog thermometer', count: 2 }, { name: 'Corrugated hose', count: 10 }] }
+                ]
+            },
+            {
+                name: 'Hall of Fame',
+                currentLevel: 0,
+                maxLevel: 3,
+                requirements: [
+                    { level: 1, items: [{ name: 'Insulating tape', count: 5 }, { name: 'Pack of nails', count: 5 }, { name: 'Light bulb', count: 5 }, { name: 'Cat figurine', count: 1 }, { name: 'Fleece fabric', count: 5 }, { name: 'Round pliers', count: 1 }] },
+                    { level: 2, items: [{ name: 'Tech manual', count: 1 }, { name: 'Pliers Elite', count: 1 }, { name: 'Toolset', count: 1 }, { name: 'Golden rooster figurine', count: 1 }, { name: 'Energy-saving lamp', count: 10 }, { name: 'Pack of screws', count: 6 }, { name: 'Duct tape', count: 3 }, { name: 'Xenomorph sealing foam', count: 5 }, { name: 'Tube of Poxeram cold welding', count: 2 }] },
+                    { level: 3, items: [{ name: 'Set of files "Master"', count: 1 }, { name: 'Electric drill', count: 1 }, { name: 'Bronze lion figurine', count: 1 }, { name: 'Energy-saving lamp', count: 15 }, { name: 'KEKTAPE duct tape', count: 3 }, { name: 'T-Shaped plug', count: 6 }, { name: 'Metal spare parts', count: 15 }, { name: 'Power cord', count: 5 }] }
+                ]
+            },
+            {
+                name: 'Security',
+                currentLevel: 0,
+                maxLevel: 3,
+                requirements: [
+                    { level: 1, items: [{ name: 'Construction measuring tape', count: 1 }] },
+                    { level: 2, items: [{ name: 'WD-40 (100ml)', count: 2 }, { name: 'Pliers Elite', count: 1 }, { name: 'TP-200 TNT brick', count: 2 }] },
+                    { level: 3, items: [{ name: 'NIXXOR lens', count: 8 }, { name: 'Working LCD', count: 2 }, { name: 'Bundle of wires', count: 10 }, { name: 'SSD drive', count: 1 }] }
+                ]
+            },
+            {
+                name: 'Defective Wall',
+                currentLevel: 0,
+                maxLevel: 6,
+                requirements: [
+                    { level: 1, items: [] },
+                    { level: 2, items: [] },
+                    { level: 3, items: [{ name: 'Fierce Blow sledgehammer', count: 1 }] },
+                    { level: 4, items: [{ name: 'Metal cutting scissors', count: 1 }, { name: 'Toolset', count: 1 }] },
+                    { level: 5, items: [] },
+                    { level: 6, items: [{ name: 'Corrugated hose', count: 2 }, { name: 'Duct tape', count: 1 }, { name: 'Toolset', count: 1 }, { name: 'Pliers Elite', count: 1 }, { name: 'Metal spare parts', count: 5 }, { name: 'Xenomorph sealing foam', count: 1 }, { name: 'Bundle of wires', count: 2 }, { name: 'Light bulb', count: 2 }] }
+                ]
+            },
+            {
+                name: 'Gym',
+                currentLevel: 0,
+                maxLevel: 1,
+                requirements: [
+                    { level: 1, items: [{ name: 'Insulating tape', count: 5 }, { name: 'Metal cutting scissors', count: 1 }, { name: 'WD-40 (100ml)', count: 1 }, { name: 'Toolset', count: 1 }, { name: 'Screw nuts', count: 5 }, { name: 'Electric drill', count: 1 }, { name: 'Bolts', count: 5 }] }
+                ]
+            },
+            {
+                name: 'Cultist Circle',
+                currentLevel: 0,
+                maxLevel: 1,
+                requirements: [
+                    { level: 1, items: [{ name: 'PAID AntiRoach spray', count: 1 }, { name: 'Light bulb', count: 5 }, { name: 'Can of white salt', count: 3 }, { name: 'SurvL Survivor Lighter', count: 1 }, { name: 'Construction measuring tape', count: 1 }, { name: 'WI-FI Camera', count: 1 }] }
+                ]
+            }
+        ];
+
+        async function loadData() {
+            // Show loading indicator
+            showLoadingStatus('Loading data...');
+
+            // Try to load from API first
+            let useDefaultData = defaultItems;
+            let useDefaultModules = defaultHideoutModules;
+            let usedAPI = false;
+            let isCached = false;
+
+            const apiData = await initializeWithAPI();
+            if (apiData) {
+                console.log('✅ Using API data as source');
+                useDefaultData = apiData.items;
+                useDefaultModules = apiData.modules;
+                usedAPI = true;
+
+                // Check if data was cached
+                const cacheTimestamp = localStorage.getItem(API_CACHE_TIMESTAMP_KEY);
+                if (cacheTimestamp) {
+                    const age = Date.now() - parseInt(cacheTimestamp);
+                    isCached = age > 60000; // More than 1 minute old = cached
+                }
+
+                showLoadingStatus('API data loaded!');
+                updateAPIIndicator(true, isCached);
+            } else {
+                console.log('⚠️ Using hardcoded data as fallback');
+                showLoadingStatus('Using offline data');
+                updateAPIIndicator(false, false);
+            }
+
+            // Load saved progress from localStorage
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const savedItems = JSON.parse(saved);
+
+                // Merge saved progress with default/API items
+                items = useDefaultData.map(defaultItem => {
+                    const savedItem = savedItems.find(s => s.name === defaultItem.name);
+                    if (savedItem) {
+                        // Keep the saved owned/findInRaid, but ALWAYS use fresh image/needed/highValue from API/defaults
+                        return {
+                            ...defaultItem,
+                            owned: savedItem.owned,
+                            findInRaid: savedItem.findInRaid !== undefined ? savedItem.findInRaid : defaultItem.findInRaid,
+                            // Always use API/default image (not saved image)
+                            image: defaultItem.image
+                        };
+                    }
+                    // Add new items that weren't in the saved data
+                    return { ...defaultItem };
+                });
+
+                // Also include any custom items that the user added manually
+                savedItems.forEach(savedItem => {
+                    const existsInDefaults = useDefaultData.find(d => d.name === savedItem.name);
+                    if (!existsInDefaults) {
+                        // This is a custom user-added item, keep it
+                        items.push(savedItem);
+                    }
+                });
+
+                // Save the merged data
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+            } else {
+                items = [...useDefaultData];
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+            }
+
+            const savedModules = localStorage.getItem(MODULES_STORAGE_KEY);
+            if (savedModules) {
+                const saved = JSON.parse(savedModules);
+                // Merge saved progress with new default/API modules
+                hideoutModules = useDefaultModules.map(defaultModule => {
+                    const savedModule = saved.find(m => m.name === defaultModule.name);
+                    if (savedModule) {
+                        // Keep the saved progress (currentLevel) but use new requirements data
+                        return {
+                            ...defaultModule,
+                            currentLevel: savedModule.currentLevel
+                        };
+                    }
+                    // Add new modules that weren't in the saved data
+                    return JSON.parse(JSON.stringify(defaultModule));
+                });
+                // Save the merged data
+                saveModulesData();
+            } else {
+                hideoutModules = JSON.parse(JSON.stringify(useDefaultModules));
+                saveModulesData();
+            }
+
+            hideLoadingStatus();
+            renderAll();
+        }
+
+        // Show/hide loading status
+        function showLoadingStatus(message) {
+            let statusEl = document.getElementById('api-status');
+            if (!statusEl) {
+                statusEl = document.createElement('div');
+                statusEl.id = 'api-status';
+                statusEl.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(255,167,38,0.9);color:#000;padding:10px 20px;border-radius:5px;font-weight:bold;z-index:10000;box-shadow:0 2px 10px rgba(0,0,0,0.3);';
+                document.body.appendChild(statusEl);
+            }
+            statusEl.textContent = message;
+            statusEl.style.display = 'block';
+        }
+
+        function hideLoadingStatus() {
+            const statusEl = document.getElementById('api-status');
+            if (statusEl) {
+                setTimeout(() => {
+                    statusEl.style.display = 'none';
+                }, 2000);
+            }
+        }
+
+        // Update API indicator with cache info
+        function updateAPIIndicator(usedAPI, isCached) {
+            const indicator = document.getElementById('api-indicator');
+            if (!indicator) return;
+
+            if (usedAPI) {
+                const cacheTimestamp = localStorage.getItem(API_CACHE_TIMESTAMP_KEY);
+                let ageText = '';
+                if (cacheTimestamp) {
+                    const age = Date.now() - parseInt(cacheTimestamp);
+                    const hours = Math.floor(age / (1000 * 60 * 60));
+                    const minutes = Math.floor((age % (1000 * 60 * 60)) / (1000 * 60));
+                    ageText = hours > 0 ? `${hours}h ago` : `${minutes}m ago`;
+                }
+
+                indicator.innerHTML = `
+                    ⚡ Powered by <a href="https://tarkov.dev" target="_blank" style="color: #ffa726; text-decoration: none;">Tarkov.dev API</a>
+                    ${isCached ? `<span style="color: #888;"> (cached ${ageText})</span>` : '<span style="color: #4caf50;"> (fresh data)</span>'}
+                `;
+            } else {
+                indicator.innerHTML = `
+                    ⚠️ Using offline data <span style="color: #888;">(API unavailable)</span>
+                `;
+            }
+        }
+
+        function saveModulesData() {
+            localStorage.setItem(MODULES_STORAGE_KEY, JSON.stringify(hideoutModules));
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+            localStorage.setItem(MODULES_STORAGE_KEY, JSON.stringify(hideoutModules));
+            updateStats();
+
+            // Update backup status after save
+            updateBackupStatus();
+
+            const backups = getAllBackups();
+            alert(`✅ Progress saved successfully!\n\n💾 ${backups.length} automatic backups available\n(Click "Manage Backups" to view)`);
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(items, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'tarkov-hideout-tracker-' + new Date().toISOString().split('T')[0] + '.json';
+            link.click();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        items = JSON.parse(e.target.result);
+                        saveData();
+                        renderAll();
+                        alert('Data imported successfully!');
+                    } catch (error) {
+                        alert('Error importing data. Please check the file format.');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function resetData() {
+            if (confirm('Are you sure you want to reset all data? This cannot be undone.')) {
+                // Create backup before reset
+                createAutoBackup('before_reset');
+
+                items = [...defaultItems];
+                saveData();
+                renderAll();
+            }
+        }
+
+        function loadDefaultItems() {
+            if (confirm('This will reset all items to default values. Continue?')) {
+                // Create backup before loading defaults
+                createAutoBackup('before_load_defaults');
+
+                items = [...defaultItems];
+                saveData();
+                renderAll();
+            }
+        }
+
+        /**
+         * Force refresh API data (clear cache and reload)
+         */
+        async function refreshAPIData() {
+            if (!confirm('This will fetch the latest data from Tarkov.dev API and update your item requirements. Your progress (owned quantities) will be preserved. Continue?')) {
+                return;
+            }
+
+            // Create backup before refresh
+            createAutoBackup('before_api_refresh');
+
+            try {
+                showLoadingStatus('🔄 Fetching latest data from API...');
+
+                // Clear API cache
+                localStorage.removeItem(API_CACHE_KEY);
+                localStorage.removeItem(API_CACHE_TIMESTAMP_KEY);
+
+                // Reload data (this will fetch fresh from API)
+                await loadData();
+
+                showLoadingStatus('✅ Data refreshed successfully!');
+                setTimeout(hideLoadingStatus, 3000);
+
+                alert('API data refreshed! Your item requirements are now up-to-date with the latest game version.');
+            } catch (error) {
+                console.error('Failed to refresh API data:', error);
+                showLoadingStatus('❌ Failed to refresh data');
+                setTimeout(hideLoadingStatus, 3000);
+                alert('Failed to refresh API data. Please check your internet connection and try again.');
+            }
+        }
+
+        /**
+         * Clear API cache (useful for debugging)
+         */
+        function clearAPICache() {
+            localStorage.removeItem(API_CACHE_KEY);
+            localStorage.removeItem(API_CACHE_TIMESTAMP_KEY);
+            console.log('API cache cleared');
+        }
+
+        /**
+         * Debug function: Check item images from API vs current
+         */
+        async function checkItemImages() {
+            try {
+                console.log('🔍 Checking item images...');
+
+                const apiData = await fetchHideoutDataWithCache();
+                const itemTotals = calculateTotalItems(apiData);
+
+                console.log('\n📸 Sample of API item images:');
+                const samples = Object.entries(itemTotals).slice(0, 10);
+                samples.forEach(([name, data]) => {
+                    console.log(`  ${name}:`);
+                    console.log(`    API iconLink: ${data.item.iconLink}`);
+
+                    const currentItem = items.find(i => i.name === name);
+                    if (currentItem) {
+                        console.log(`    Current image: ${currentItem.image}`);
+                        console.log(`    Match: ${currentItem.image === data.item.iconLink ? '✅' : '❌'}`);
+                    }
+                    console.log('');
+                });
+
+                console.log('\n💡 To update all images, click "Refresh API Data" button');
+            } catch (error) {
+                console.error('Failed to check images:', error);
+            }
+        }
+
+        // ====================
+        // BACKUP MANAGER UI
+        // ====================
+
+        /**
+         * Open backup manager modal
+         */
+        function openBackupManager() {
+            const modal = document.getElementById('backupManagerModal');
+            const backupList = document.getElementById('backupList');
+
+            const backups = getAllBackups();
+
+            if (backups.length === 0) {
+                backupList.innerHTML = '<p style="text-align: center; color: #888; padding: 40px;">No backups found. Backups are created automatically before major operations.</p>';
+            } else {
+                backupList.innerHTML = backups.map(backup => {
+                    const itemCount = backup.items ? backup.items.length : 0;
+                    const moduleCount = backup.modules ? backup.modules.length : 0;
+                    const totalOwned = backup.items ? backup.items.reduce((sum, item) => sum + item.owned, 0) : 0;
+
+                    return `
+                        <div style="background: rgba(0,0,0,0.3); padding: 15px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #4a4a4a;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="font-weight: bold; color: #ffa726; margin-bottom: 5px;">
+                                        📅 ${backup.date}
+                                    </div>
+                                    <div style="color: #aaa; font-size: 0.9em;">
+                                        Reason: ${backup.reason} • ${itemCount} items • ${totalOwned} total owned
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 10px;">
+                                    <button onclick="restoreBackupWithConfirm('${backup.key}')" style="background: #4caf50; padding: 8px 16px;">
+                                        ♻️ Restore
+                                    </button>
+                                    <button onclick="deleteBackupWithConfirm('${backup.key}')" style="background: #f44336; padding: 8px 16px;">
+                                        🗑️ Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        /**
+         * Close backup manager modal
+         */
+        function closeBackupManager() {
+            const modal = document.getElementById('backupManagerModal');
+            modal.style.display = 'none';
+        }
+
+        /**
+         * Restore backup with confirmation
+         */
+        function restoreBackupWithConfirm(backupKey) {
+            const backup = JSON.parse(localStorage.getItem(backupKey));
+            if (!backup) {
+                alert('Backup not found!');
+                return;
+            }
+
+            if (confirm(`Restore backup from ${backup.date}?\n\nThis will replace your current progress with the backup. Your current data will be backed up first.`)) {
+                if (restoreFromBackup(backupKey)) {
+                    alert('✅ Backup restored successfully!');
+                    closeBackupManager();
+                } else {
+                    alert('❌ Failed to restore backup. Check console for details.');
+                }
+            }
+        }
+
+        /**
+         * Delete backup with confirmation
+         */
+        function deleteBackupWithConfirm(backupKey) {
+            if (confirm('Delete this backup? This cannot be undone.')) {
+                deleteBackup(backupKey);
+                openBackupManager(); // Refresh the list
+            }
+        }
+
+        /**
+         * Create manual backup
+         */
+        function createManualBackup() {
+            const backupKey = createAutoBackup('manual');
+            if (backupKey) {
+                alert('✅ Manual backup created successfully!');
+                openBackupManager(); // Refresh the list
+            } else {
+                alert('❌ Failed to create backup. Check console for details.');
+            }
+        }
+
+        /**
+         * Download all backups as JSON
+         */
+        function downloadAllBackups() {
+            const backups = getAllBackups();
+            if (backups.length === 0) {
+                alert('No backups to download.');
+                return;
+            }
+
+            const data = {
+                exportDate: new Date().toISOString(),
+                backups: backups
+            };
+
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `tarkov-backups-${Date.now()}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+
+            alert(`✅ Downloaded ${backups.length} backups!`);
+        }
+
+        function updateQuantity(index, change) {
+            items[index].owned = Math.max(0, items[index].owned + change);
+            renderAll();
+        }
+
+        function setQuantity(index, value) {
+            items[index].owned = Math.max(0, parseInt(value) || 0);
+            renderAll();
+        }
+
+        function toggleHighValue(index) {
+            items[index].highValue = !items[index].highValue;
+            renderAll();
+        }
+
+        /**
+         * Adjust high value threshold
+         */
+        function adjustHighValueThreshold() {
+            const currentThreshold = HIGH_VALUE_THRESHOLD;
+            const newThreshold = prompt(
+                `Set the minimum flea market price for "High Value" items:\n\nCurrent threshold: ${currentThreshold.toLocaleString()}₽\n\nEnter new threshold (in roubles):`,
+                currentThreshold
+            );
+
+            if (newThreshold === null) return; // Cancelled
+
+            const threshold = parseInt(newThreshold);
+            if (isNaN(threshold) || threshold < 0) {
+                alert('Please enter a valid number (0 or greater)');
+                return;
+            }
+
+            // Update threshold
+            HIGH_VALUE_THRESHOLD = threshold;
+            localStorage.setItem(HIGH_VALUE_THRESHOLD_KEY, threshold.toString());
+
+            // Update all threshold displays
+            const thresholdDisplay = document.getElementById('thresholdDisplay');
+            if (thresholdDisplay) {
+                thresholdDisplay.textContent = threshold.toLocaleString() + '₽';
+            }
+            const thresholdInfo = document.getElementById('highValueThresholdInfo');
+            if (thresholdInfo) {
+                thresholdInfo.textContent = threshold.toLocaleString() + '₽';
+            }
+
+            // Re-evaluate all items based on new threshold
+            items.forEach(item => {
+                if (item.fleaPrice !== undefined) {
+                    item.highValue = item.fleaPrice >= threshold;
+                }
+            });
+
+            // Re-render
+            renderAll();
+
+            console.log(`💎 High value threshold updated to ${threshold.toLocaleString()}₽`);
+            alert(`✅ High value threshold updated to ${threshold.toLocaleString()}₽\n\nItems will be re-evaluated based on flea market prices.`);
+        }
+
+        function openImageEditor(index) {
+            currentEditingItemIndex = index;
+            const item = items[index];
+            document.getElementById('editItemName').value = item.name;
+            document.getElementById('editImageUrl').value = item.image || '';
+            document.getElementById('imageEditorModal').classList.add('show');
+            previewImage();
+        }
+
+        function closeImageEditor() {
+            document.getElementById('imageEditorModal').classList.remove('show');
+            currentEditingItemIndex = null;
+        }
+
+        function previewImage() {
+            const url = document.getElementById('editImageUrl').value.trim();
+            const preview = document.getElementById('imagePreview');
+            const noPreview = document.getElementById('noPreview');
+
+            if (url) {
+                preview.src = url;
+                preview.style.display = 'block';
+                noPreview.style.display = 'none';
+                preview.onerror = function() {
+                    preview.style.display = 'none';
+                    noPreview.style.display = 'block';
+                    noPreview.textContent = 'Invalid image URL';
+                };
+            } else {
+                preview.style.display = 'none';
+                noPreview.style.display = 'block';
+                noPreview.textContent = 'Enter a valid image URL to see preview';
+            }
+        }
+
+        function saveImageUrl() {
+            if (currentEditingItemIndex !== null) {
+                const newUrl = document.getElementById('editImageUrl').value.trim();
+                items[currentEditingItemIndex].image = newUrl;
+                closeImageEditor();
+                renderAll();
+                // Auto-save after image change
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+            }
+        }
+
+        function openAddItemModal() {
+            // Reset form fields
+            document.getElementById('addItemName').value = '';
+            document.getElementById('addItemNeeded').value = '1';
+            document.getElementById('addItemOwned').value = '0';
+            document.getElementById('addItemFIR').checked = false;
+            document.getElementById('addItemHighValue').checked = false;
+            document.getElementById('addItemImage').value = '';
+            document.getElementById('addItemImagePreview').style.display = 'none';
+            document.getElementById('addItemNoPreview').style.display = 'block';
+            document.getElementById('addItemNoPreview').textContent = 'Enter an image URL to see preview';
+
+            document.getElementById('addItemModal').classList.add('show');
+        }
+
+        function closeAddItemModal() {
+            document.getElementById('addItemModal').classList.remove('show');
+        }
+
+        function previewAddItemImage() {
+            const url = document.getElementById('addItemImage').value.trim();
+            const preview = document.getElementById('addItemImagePreview');
+            const noPreview = document.getElementById('addItemNoPreview');
+
+            if (url) {
+                preview.src = url;
+                preview.style.display = 'block';
+                noPreview.style.display = 'none';
+                preview.onerror = function() {
+                    preview.style.display = 'none';
+                    noPreview.style.display = 'block';
+                    noPreview.textContent = 'Invalid image URL';
+                };
+            } else {
+                preview.style.display = 'none';
+                noPreview.style.display = 'block';
+                noPreview.textContent = 'Enter an image URL to see preview';
+            }
+        }
+
+        function saveNewItem() {
+            const name = document.getElementById('addItemName').value.trim();
+            const neededValue = document.getElementById('addItemNeeded').value;
+            const needed = neededValue === '' ? 1 : parseInt(neededValue);
+            const owned = parseInt(document.getElementById('addItemOwned').value) || 0;
+            const findInRaid = document.getElementById('addItemFIR').checked;
+            const highValue = document.getElementById('addItemHighValue').checked;
+            const image = document.getElementById('addItemImage').value.trim() || 'https://assets.tarkov.dev/5d1b371186f774253763a656-icon.webp';
+
+            // Validation
+            if (!name) {
+                alert('Please enter an item name');
+                return;
+            }
+
+            if (needed < 0 || isNaN(needed)) {
+                alert('Quantity needed must be a valid number (0 or greater)');
+                return;
+            }
+
+            // Check for duplicate item names
+            const existingItem = items.find(item => item.name.toLowerCase() === name.toLowerCase());
+            if (existingItem) {
+                alert('An item with this name already exists. Please use a different name or edit the existing item.');
+                return;
+            }
+
+            // Create new item
+            const newItem = {
+                name: name,
+                needed: needed,
+                owned: owned,
+                findInRaid: findInRaid,
+                highValue: highValue,
+                image: image
+            };
+
+            // Add to items array
+            items.push(newItem);
+
+            // Close modal
+            closeAddItemModal();
+
+            // Re-render and save
+            renderAll();
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+
+            // Show success message
+            alert(`Item "${name}" added successfully!`);
+        }
+
+        function getAdjustedNeeded(itemName) {
+            const item = items.find(i => i.name === itemName);
+            if (!item) return 0;
+
+            let totalUsed = 0;
+            hideoutModules.forEach(module => {
+                for (let level = 1; level <= module.currentLevel; level++) {
+                    const req = module.requirements.find(r => r.level === level);
+                    if (req) {
+                        const itemReq = req.items.find(i => i.name === itemName);
+                        if (itemReq) {
+                            totalUsed += itemReq.count;
+                        }
+                    }
+                }
+            });
+
+            return Math.max(0, item.needed - totalUsed);
+        }
+
+        function getModulesUsingItem(itemName) {
+            const usage = [];
+            hideoutModules.forEach(module => {
+                module.requirements.forEach(req => {
+                    const itemReq = req.items.find(i => i.name === itemName);
+                    if (itemReq) {
+                        const isCompleted = req.level <= module.currentLevel;
+                        usage.push({
+                            module: module.name,
+                            level: req.level,
+                            count: itemReq.count,
+                            completed: isCompleted
+                        });
+                    }
+                });
+            });
+            return usage;
+        }
+
+        function showItemUsage(itemName) {
+            const usage = getModulesUsingItem(itemName);
+            if (usage.length === 0) {
+                alert(`"${itemName}" is not used in any hideout module upgrades in the current data.`);
+                return;
+            }
+
+            const usageText = usage.map(u =>
+                `${u.completed ? '✓ ' : ''}${u.module} Level ${u.level}: ${u.count}x${u.completed ? ' (Completed)' : ''}`
+            ).join('\n');
+
+            alert(`${itemName} is needed for:\n\n${usageText}`);
+        }
+
+        function setModuleLevel(moduleIndex, level) {
+            const module = hideoutModules[moduleIndex];
+            // Toggle: if clicking the current level, go back one level
+            if (module.currentLevel === level) {
+                hideoutModules[moduleIndex].currentLevel = Math.max(0, level - 1);
+            } else {
+                hideoutModules[moduleIndex].currentLevel = level;
+            }
+            saveModulesData();
+            renderAll();
+        }
+
+        function renderHideoutModules() {
+            const container = document.getElementById('hideoutModulesGrid');
+
+            const html = hideoutModules.map((module, moduleIndex) => {
+                const levelsHtml = Array.from({ length: module.maxLevel }, (_, i) => i + 1)
+                    .map(level => {
+                        const isCompleted = level <= module.currentLevel;
+                        const isActive = level === module.currentLevel;
+                        const classNames = isCompleted ? 'level-button completed' : (isActive ? 'level-button active' : 'level-button');
+                        const title = isCompleted ? 'Click again to undo' : 'Click to mark as complete';
+                        return `<div class="${classNames}" onclick="setModuleLevel(${moduleIndex}, ${level})" title="${title}">
+                            Level ${level}
+                        </div>`;
+                    }).join('');
+
+                // Show NEXT level requirements instead of current level
+                const nextLevel = module.currentLevel + 1;
+                const nextReq = nextLevel <= module.maxLevel
+                    ? module.requirements.find(r => r.level === nextLevel)
+                    : null;
+                const itemsHtml = nextReq && nextReq.items.length > 0
+                    ? `<div style="margin-top: 15px; color: #aaa;">
+                        <strong>Next Level ${nextLevel} requires:</strong>
+                        <ul style="margin: 8px 0 0 20px; padding: 0;">
+                            ${nextReq.items.map(item => `<li>${item.count}x ${item.name}</li>`).join('')}
+                        </ul>
+                       </div>`
+                    : nextReq && nextReq.items.length === 0
+                    ? `<div style="margin-top: 15px; color: #aaa;">
+                        <strong>Next Level ${nextLevel}:</strong> No items required
+                       </div>`
+                    : module.currentLevel === module.maxLevel
+                    ? `<div style="margin-top: 15px; color: #4caf50;">
+                        <strong>✓ Module Complete!</strong> All levels finished.
+                       </div>`
+                    : '';
+
+                return `
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-name">${module.name}</div>
+                            <div style="color: #ffa726; font-weight: bold;">Level ${module.currentLevel} / ${module.maxLevel}</div>
+                        </div>
+                        <div class="module-levels">
+                            ${levelsHtml}
+                        </div>
+                        ${itemsHtml}
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = html;
+        }
+
+        function createItemCard(item, index) {
+            const adjustedNeeded = getAdjustedNeeded(item.name);
+            const stillNeeded = Math.max(0, adjustedNeeded - item.owned);
+            const progress = Math.min(100, item.needed > 0 ? (item.owned / item.needed) * 100 : 0);
+            const adjustedProgress = Math.min(100, adjustedNeeded > 0 ? (item.owned / adjustedNeeded) * 100 : 100);
+            const isCompleted = item.owned >= adjustedNeeded;
+            const isSafeToSell = item.owned > adjustedNeeded;
+            const imageUrl = item.image || 'https://assets.tarkov.dev/5d1b2f3f86f77425243e98ff-icon.webp';
+
+            const originalStillNeeded = Math.max(0, item.needed - item.owned);
+            const excessQuantity = Math.max(0, item.owned - adjustedNeeded);
+            const neededDisplay = adjustedNeeded !== item.needed
+                ? `<div style="text-align: center;">
+                    <div style="font-size: 1.5em; font-weight: bold; color: #ffa726;">${stillNeeded}</div>
+                    <div style="font-size: 0.8em; color: #888; text-decoration: line-through;">${originalStillNeeded}</div>
+                   </div>`
+                : `<div style="text-align: center; font-size: 1.5em; font-weight: bold; color: #ffa726;">${stillNeeded}</div>`;
+            const safeToSellDisplay = isSafeToSell
+                ? `<div style="text-align: center; margin-top: 5px;">
+                    <div style="font-size: 0.9em; color: #4caf50; font-weight: bold;">✓ Safe to sell: ${excessQuantity}</div>
+                   </div>`
+                : '';
+
+            return `
+                <div class="item-card ${item.highValue ? 'high-value' : ''} ${isCompleted ? 'completed' : ''}">
+                    <div class="item-card-top">
+                        <div class="item-image-container">
+                            <img src="${imageUrl}" alt="${item.name}" class="item-image"
+                                onerror="this.style.display='none'; this.nextElementSibling.nextElementSibling.style.display='flex';">
+                            <button class="edit-image-btn" onclick="openImageEditor(${index}); event.stopPropagation();">✏️</button>
+                            <div class="item-image item-image-error" style="display: none;">📦</div>
+                        </div>
+                        <div class="item-info">
+                            <div class="item-header">
+                                <div class="item-name">${item.name}</div>
+                            </div>
+                            <div style="display: flex; gap: 5px; flex-wrap: wrap; align-items: center;">
+                                ${item.highValue ? '<span class="high-value-badge">💎 HIGH VALUE</span>' : ''}
+                                ${item.findInRaid ? '<span class="fir-badge">FIR</span>' : ''}
+                                ${item.fleaPrice ? `<span style="color: #4caf50; font-size: 0.9em; font-weight: bold;">💰 ${item.fleaPrice.toLocaleString()}₽</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="item-controls">
+                        <div class="quantity-control">
+                            <label>Owned</label>
+                            <div class="quantity-input">
+                                <button onclick="updateQuantity(${index}, -1)">-</button>
+                                <input type="number" value="${item.owned}"
+                                    onchange="setQuantity(${index}, this.value)" min="0">
+                                <button onclick="updateQuantity(${index}, 1)">+</button>
+                            </div>
+                        </div>
+                        <div class="quantity-control">
+                            <label>Still Needed</label>
+                            ${neededDisplay}
+                            ${safeToSellDisplay}
+                        </div>
+                        <div class="quantity-control">
+                            <label>Actions</label>
+                            <button onclick="toggleHighValue(${index})" style="width: 100%; margin-bottom: 5px;">
+                                ${item.highValue ? '⭐' : '☆'} Value
+                            </button>
+                            <button onclick="showItemUsage('${item.name.replace(/'/g, "\\'")}'); event.stopPropagation();"
+                                class="usage-button" style="width: 100%;" title="Show which modules need this item">
+                                📋 Usage
+                            </button>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${adjustedProgress}%"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderItems(containerId, filterFn) {
+            const container = document.getElementById(containerId);
+            const searchTerm = document.getElementById('searchBar').value.toLowerCase();
+
+            const filtered = items
+                .map((item, index) => ({ item, index }))
+                .filter(({ item }) => filterFn(item))
+                .filter(({ item }) => item.name.toLowerCase().includes(searchTerm));
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty-state">No items found</div>';
+            } else {
+                container.innerHTML = filtered
+                    .map(({ item, index }) => createItemCard(item, index))
+                    .join('');
+            }
+        }
+
+        function renderAll() {
+            renderItems('allItemsGrid', () => true);
+            renderItems('neededItemsGrid', item => {
+                const adjustedNeeded = getAdjustedNeeded(item.name);
+                return item.owned < adjustedNeeded;
+            });
+            renderItems('safeToSellGrid', item => {
+                const adjustedNeeded = getAdjustedNeeded(item.name);
+                // Safe to sell: items where you own more than needed for remaining hideout modules
+                return item.owned > adjustedNeeded;
+            });
+            renderItems('highValueGrid', item => item.highValue);
+            renderHideoutModules();
+            updateStats();
+        }
+
+        function updateStats() {
+            const total = items.length;
+            const completed = items.filter(item => {
+                const adjustedNeeded = getAdjustedNeeded(item.name);
+                return item.owned >= adjustedNeeded;
+            }).length;
+            const highValue = items.filter(item => item.highValue).length;
+            const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            document.getElementById('totalItems').textContent = total;
+            document.getElementById('completedItems').textContent = completed;
+            document.getElementById('progressPercent').textContent = progress + '%';
+            document.getElementById('highValueCount').textContent = highValue;
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        function filterItems() {
+            renderAll();
+        }
+
+        // Load data on page load
+        loadData().then(() => {
+            // Create initial backup on load (once per session)
+            const lastSession = sessionStorage.getItem('tarkov_session_backup');
+            if (!lastSession) {
+                createAutoBackup('session_start');
+                sessionStorage.setItem('tarkov_session_backup', Date.now().toString());
+            }
+
+            // Update backup status
+            updateBackupStatus();
+
+            // Create auto-backup every 15 minutes
+            setInterval(() => {
+                createAutoBackup('periodic');
+                updateBackupStatus();
+            }, 15 * 60 * 1000); // 15 minutes
+
+            // Create backup before page unload
+            window.addEventListener('beforeunload', () => {
+                createAutoBackup('session_end');
+            });
+
+            console.log('💾 Automatic backup system active');
+        }).catch(error => {
+            console.error('Failed to initialize app:', error);
+            alert('Failed to load app data. Please refresh the page.');
+        });
+
+        // Update backup status every minute
+        setInterval(updateBackupStatus, 60000);
+    </script>
+</body>
+</html>
