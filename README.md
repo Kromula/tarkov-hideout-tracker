@@ -95,7 +95,7 @@ Tarkov Hideout Tracker is a comprehensive web application that helps Escape from
 
 1. **Download or clone this repository:**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/tarkov-hideout-tracker.git
+   git clone https://github.com/Kromula/tarkov-hideout-tracker.git
    cd tarkov-hideout-tracker
    ```
 
@@ -119,7 +119,7 @@ npx http-server -p 8000
 
 ### Option 3: GitHub Pages (Coming Soon)
 
-Visit the live demo: `https://YOUR_USERNAME.github.io/tarkov-hideout-tracker/`
+Visit the live demo: `https://Kromula.github.io/tarkov-hideout-tracker/`
 
 ---
 
@@ -306,7 +306,7 @@ Contributions are welcome! Here's how:
 
 ## 🐛 Known Issues
 
-- None currently! Report any bugs via [Issues](https://github.com/YOUR_USERNAME/tarkov-hideout-tracker/issues)
+- None currently! Report any bugs via [Issues](https://github.com/Kromula/tarkov-hideout-tracker/issues)
 
 ---
 
@@ -377,8 +377,8 @@ SOFTWARE.
 
 - 🌐 **Live Demo:** Coming Soon
 - 📖 **Documentation:** [Backup System](BACKUP_SYSTEM.md) | [High Value Guide](HIGH_VALUE_FEATURE.md)
-- 🐛 **Report Issues:** [GitHub Issues](https://github.com/YOUR_USERNAME/tarkov-hideout-tracker/issues)
-- 💬 **Discussions:** [GitHub Discussions](https://github.com/YOUR_USERNAME/tarkov-hideout-tracker/discussions)
+- 🐛 **Report Issues:** [GitHub Issues](https://github.com/Kromula/tarkov-hideout-tracker/issues)
+- 💬 **Discussions:** [GitHub Discussions](https://github.com/Kromula/tarkov-hideout-tracker/discussions)
 
 ---
 
